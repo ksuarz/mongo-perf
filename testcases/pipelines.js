@@ -135,7 +135,8 @@ function generateTestCase(options) {
                     aggregate: "#B_COLL",
                     pipeline: pipeline,
                     cursor: {}
-                }
+                },
+                showError: true
             }
         ]
     });
@@ -159,7 +160,8 @@ function generateTestCase(options) {
                     aggregate: "#B_COLL",
                     pipeline: pipeline,
                     cursor: {}
-                }
+                },
+                showError: true
             }
         ]
     });
