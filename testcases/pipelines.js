@@ -106,9 +106,6 @@ function populatorGenerator(isView, nDocs, indices, docGenerator) {
  * uses more than one collection, this will need to drop the other collection(s) involved.
  */
 function generateTestCase(options) {
-    if (options.name !== "Out")
-        return;
-
     var isView = true;
     var nDocs = options.nDocs || 500;
     var tags = options.tags || [];
