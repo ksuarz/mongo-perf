@@ -104,18 +104,23 @@ function populatorGenerator(isView, nDocs, indices, docGenerator) {
  * @param {function} [options.post=drop] - A function run after the test completes, intended to
  * clean up any state on the server it may have created during setup or execution. If 'pipeline'
  * uses more than one collection, this will need to drop the other collection(s) involved.
+ * @param {Boolean} [options.noRegression=false] - If true, do not include this test in the
+ * regression suite.
  */
 function generateTestCase(options) {
-    var isView = true;
+    var isView = true;  // Constant for use when calling populatorGenerator().
     var nDocs = options.nDocs || 500;
-    var tags = options.tags || [];
     var pipeline = options.pipeline;
+    var tags = options.tags || [];
+    if (options.noRegression !== true) {
+        tags.push("regression");
+    }
     if (pipeline.length > 0 && !pipeline[pipeline.length - 1].hasOwnProperty("$out")) {
         pipeline.push({$skip: 1e9});
     }
 
     tests.push({
-        tags: ["aggregation", "regression"].concat(tags),
+        tags: ["aggregation"].concat(tags),
         name: "Aggregation." + options.name,
         pre: (options.pre !== undefined) ? options.pre(!isView) : populatorGenerator(!isView,
                                                nDocs,
@@ -137,7 +142,7 @@ function generateTestCase(options) {
         ]
     });
     tests.push({
-        tags: ["views", "aggregation_identityview", "regression"].concat(tags),
+        tags: ["views", "aggregation_identityview"].concat(tags),
         name: "Aggregation.IdentityView." + options.name,
         pre: (options.pre !== undefined) ? options.pre(isView) : populatorGenerator(isView,
                                                nDocs,
@@ -754,6 +759,9 @@ generateTestCase({
 
 generateTestCase({
     name: "UnwindThenGroup",
+    // TODO (PERF-805): When the throughput of this test has improved, re-tag it back into the
+    // regression suite.
+    noRegression: true,
     docGenerator: function simpleUnwindDocGenerator(i) {
         var largeArray = [];
         for (var j = 0; j < 1000; j++) {
