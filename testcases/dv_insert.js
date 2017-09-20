@@ -8,7 +8,7 @@ if (typeof(tests) != "object") {
  * that does not use the validator to serve as a benchmark for the overhead of document validation.
  *
  * If 'jsonSchema' exists, additionally generates a third test with a validator using the schema
- * wrapped in $jsonSchema'. The schema should be semantically equivalent to 'validator' and is
+ * wrapped in $jsonSchema. The schema should be semantically equivalent to 'validator' and is
  * intended to test the overhead of $jsonSchema.
  */
 function createDocValidationTest(name, doc, validator, jsonSchema) {
