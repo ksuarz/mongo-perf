@@ -147,3 +147,58 @@ var jsonSchema = {
     ]
 };
 createDocValidationTest("Insert.DocValidation.TwentyInt", doc, validator, jsonSchema);
+
+// Tests a JSON Schema that enforces a variety of constraints on twenty fields (not including the
+// _id).
+doc = {
+    a: 0,
+    b: 1,
+    c: 2,
+    d: 3,
+    e: 4,
+    f: "f",
+    g: "g",
+    h: "h",
+    i: "i",
+    j: "j",
+    k: [0, 1, 2],
+    l: ["a", "b", "c"],
+    m: [{foo: "bar"}],
+    n: [0, "a", {foo: "bar"}],
+    o: [[1, 2], [3, 4]],
+    p: {sku: "123"},
+    q: {sku: 123},
+    r: {value: 10},
+    s: {value: -10},
+    t: {}
+};
+validator = {
+    $jsonSchema: {
+        minProperties: 15,
+        maxProperties: 21,
+        properties: {
+            a: {type: "number"},
+            b: {bsonType: "number"},
+            c: {bsonType: "double"},
+            d: {type: ["number", "string"]},
+            e: {minimum: 0},
+            f: {type: "string"},
+            g: {bsonType: "string"},
+            h: {type: ["string", "array"]},
+            i: {minLength: 1},
+            j: {maxLength: 1},
+            k: {type: "array"},
+            l: {bsonType: "array"},
+            m: {bsonType: ["array", "object"]},
+            n: {minItems: 1},
+            o: {maxItems: 10},
+            p: {type: "object"},
+            q: {bsonType: "object"},
+            r: {type: ["object", "string"]},
+            s: {minProperties: 1},
+            t: {maxProperties: 15}
+        },
+        required: ["_id", "a", "b", "f", "g", "k", "l", "p", "q"]
+    }
+}
+createDocValidationTest("Insert.DocValidation.JSONSchema", doc, validator);
