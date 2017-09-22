@@ -49,10 +49,11 @@ function createDocValidationTest(name, doc, validator, jsonSchema) {
 }
 
 // Tests inserting documents with a field which must exist and be an integer. This targets the use
-// of $type and $exists on a single field.
+// of $type and $exists on a single field. Also generates a comparison JSON Schema test.
 var doc = {a: {"#RAND_INT": [0, 10000]}};
 var validator = {$and: [{a: {$exists: true}}, {a: {$type: 16}}]};
-createDocValidationTest("Insert.DocValidation.OneInt", doc, validator);
+var jsonSchema = {properties: {a: {bsonType: "integer"}}, required: ["a"]};
+createDocValidationTest("Insert.DocValidation.OneInt", doc, validator, jsonSchema);
 
 // Like the "OneInt" test, but validates that ten fields exist and are integers.
 doc = {
@@ -118,7 +119,7 @@ validator = {
         {t: {$exists: true}}, {t: {$type: 16}},
     ]
 };
-var jsonSchema = {
+jsonSchema = {
     properties: {
         a: {bsonType: "int"},
         b: {bsonType: "int"},
@@ -200,5 +201,86 @@ validator = {
         },
         required: ["_id", "a", "b", "f", "g", "k", "l", "p", "q"]
     }
-}
-createDocValidationTest("Insert.DocValidation.JSONSchema", doc, validator);
+};
+createDocValidationTest("Insert.DocValidation.JSONSchema.Variety", doc, validator);
+
+// Tests a JSON Schema that enforces constraints on an array containing thirty items.
+doc = {
+    a: [
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+        "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+        "Ut enim ad minim veniam, quis nostrud exercitation ullamco",
+        "laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor",
+        "in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla",
+        "pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa",
+        "qui officia deserunt mollit anim id est laborum",
+        {b: 0, c: 0},
+        {b: 1, c: 1},
+        {b: 2, c: 2},
+        {b: 3, c: 3},
+        {b: 4, c: 4},
+        {b: 5, c: 5},
+        {b: 6, c: 6},
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        [229, "West 43rd Street"],
+        ["1-2-1", "銀座"],
+        [29, "Rue Montmartre"],
+        ["Maximilianstraße", 7],
+        [70, "Comunipaw Avenue"],
+        ["Prinzregentenstraße", 9],
+        [120, "Ocean Avenue"],
+        ["1-9-1", "丸の内"],
+        [1600, "Pennsylvania Avenue"],
+    ]
+};
+validator = {
+    $jsonSchema: {
+        properties: {
+            a: {
+                type: ["array"],
+                uniqueItems: true,
+                minItems: 10,
+                maxItems: 30,
+                items: [
+                    {enum: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit"]},
+                    {type: "string"},
+                    {type: ["string"]},
+                    {type: "string"},
+                    {minLength: 5},
+                    {maxLength: 90},
+                    {pattern: "[a-zA-Z .,]+"},
+                    {type: "object"},
+                    {minProperties: 1},
+                    {maxProperties: 3},
+                    {properties: {b: {type: "number"}}},
+                    {patternProperties: {c: {type: "number"}}},
+                    {required: ["b", "c"]},
+                    {properties: {b: {}, c: {}}, additionalProperties: false},
+                    {type: "number"},
+                    {type: ["number"]},
+                    {bsonType: "number"},
+                    {bsonType: ["int", "long", "number"]},
+                    {minimum: 0},
+                    {maximum: 10},
+                    {multipleOf: 2}
+                ],
+                additionalItems: {
+                    type: "array",
+                    oneOf: [
+                        {items: [{type: "number"}, {type: "string"}]},
+                        {items: [{type: "string"}, {type: "number"}]},
+                        {items: [{type: "string"}, {type: "string"}]}
+                    ]
+                }
+            }
+        },
+        required: ["a"]
+    }
+};
+createDocValidationTest("Insert.DocValidation.JSONSchema.Array", doc, validator);
