@@ -74,8 +74,7 @@ validator = {
         {c: {$exists: true}}, {c: {$type: 16}}, {d: {$exists: true}}, {d: {$type: 16}},
         {e: {$exists: true}}, {e: {$type: 16}}, {f: {$exists: true}}, {f: {$type: 16}},
         {g: {$exists: true}}, {g: {$type: 16}}, {h: {$exists: true}}, {h: {$type: 16}},
-        {a: {$exists: true}}, {a: {$type: 16}}, {i: {$exists: true}}, {i: {$type: 16}},
-        {j: {$exists: true}}, {j: {$type: 16}}
+        {i: {$exists: true}}, {i: {$type: 16}}, {j: {$exists: true}}, {j: {$type: 16}},
     ]
 };
 createDocValidationTest("Insert.DocValidation.TenInt", doc, validator);
@@ -110,13 +109,12 @@ validator = {
         {c: {$exists: true}}, {c: {$type: 16}}, {d: {$exists: true}}, {d: {$type: 16}},
         {e: {$exists: true}}, {e: {$type: 16}}, {f: {$exists: true}}, {f: {$type: 16}},
         {g: {$exists: true}}, {g: {$type: 16}}, {h: {$exists: true}}, {h: {$type: 16}},
-        {a: {$exists: true}}, {a: {$type: 16}}, {i: {$exists: true}}, {i: {$type: 16}},
-        {j: {$exists: true}}, {j: {$type: 16}}, {k: {$exists: true}}, {k: {$type: 16}},
-        {l: {$exists: true}}, {l: {$type: 16}}, {m: {$exists: true}}, {m: {$type: 16}},
-        {n: {$exists: true}}, {n: {$type: 16}}, {o: {$exists: true}}, {o: {$type: 16}},
-        {p: {$exists: true}}, {p: {$type: 16}}, {q: {$exists: true}}, {q: {$type: 16}},
-        {r: {$exists: true}}, {r: {$type: 16}}, {s: {$exists: true}}, {s: {$type: 16}},
-        {t: {$exists: true}}, {t: {$type: 16}},
+        {i: {$exists: true}}, {i: {$type: 16}}, {j: {$exists: true}}, {j: {$type: 16}},
+        {k: {$exists: true}}, {k: {$type: 16}}, {l: {$exists: true}}, {l: {$type: 16}},
+        {m: {$exists: true}}, {m: {$type: 16}}, {n: {$exists: true}}, {n: {$type: 16}},
+        {o: {$exists: true}}, {o: {$type: 16}}, {p: {$exists: true}}, {p: {$type: 16}},
+        {q: {$exists: true}}, {q: {$type: 16}}, {r: {$exists: true}}, {r: {$type: 16}},
+        {s: {$exists: true}}, {s: {$type: 16}}, {t: {$exists: true}}, {t: {$type: 16}},
     ]
 };
 jsonSchema = {
