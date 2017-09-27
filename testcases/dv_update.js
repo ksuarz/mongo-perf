@@ -3,28 +3,28 @@ if (typeof(tests) != "object") {
 }
 
 /**
- * Creates a document validation insertion performance test named 'name'. During setup, it creates a
- * collection with document validator 'validator' and populates it by obtaining documents from
- * 'generator'. It then tests the overhead of executing 'update'.
+ * Creates a document validation update performance test named 'name'. During setup, it populates a
+ * collection by obtaining documents from 'generator'. It then tests the overhead of executing
+ * 'update' in the collection with a validator 'validator' or 'jsonSchema', compared to a baseline
+ * where no validator is present.
  *
- * If 'jsonSchema' exists, additional generates a test with a validator using the schema wrapped in
- * $jsonSchema. The schema should be semantically equivalent to 'validator' and is intended to test
- * the overhead of $jsonSchema.
+ * If both 'validator' and 'jsonSchema' are specified, the two should be semantically equivalent,
+ * such that the test compares the performance of JSON Schema against normal MongoDB match
+ * expressions.
  */
 function createDocValidationTest(name, generator, update, validator, jsonSchema) {
     var baseTags = ["update", "DocValidation"];
     var numDocs = 4800;
     var query = {_id: {"#RAND_INT_PLUS_THREAD": [0, 100]}};
     var populate = function(collection) {
-        var docs = [];
+        var bulk = collection.initializeUnorderedBulkOp();
         for (var i = 0; i < numDocs; ++i) {
-            docs.push(generator(i));
+            bulk.insert(generator(i));
         }
-        collection.insert(docs);
-        collection.getDB().getLastError();
+        assert.writeOK(bulk.execute());
     };
 
-    // Add a baseline test that simply performs 'update'.
+    // Add a baseline test that performs 'update' in a collection with no validator.
     tests.push({
         name: name + ".Compare",
         tags: ["compare"].concat(baseTags),
@@ -36,16 +36,18 @@ function createDocValidationTest(name, generator, update, validator, jsonSchema)
     });
 
     // Add a test that performs 'update' in a collection with validator 'validator'.
-    tests.push({
-        name: name,
-        tags: ["regression"].concat(baseTags),
-        pre: function(collection) {
-            collection.drop();
-            collection.runCommand("create", {validator: validator});
-            populate(collection);
-        },
-        ops: [{op: "update", query: query, update: update}]
-    });
+    if (validator !== undefined) {
+        tests.push({
+            name: name,
+            tags: ["regression"].concat(baseTags),
+            pre: function(collection) {
+                collection.drop();
+                assert.commandWorked(collection.runCommand("create", {validator: validator}));
+                populate(collection);
+            },
+            ops: [{op: "update", query: query, update: update}]
+        });
+    }
 
     // Add a test that performs 'update' in a collection with validator 'jsonSchema', if requested.
     if (jsonSchema !== undefined) {
@@ -54,7 +56,8 @@ function createDocValidationTest(name, generator, update, validator, jsonSchema)
             tags: ["regression", "jsonschema"].concat(baseTags),
             pre: function(collection) {
                 collection.drop();
-                collection.runCommand("create", {validator: {$jsonSchema: jsonSchema}});
+                assert.commandWorked(
+                    collection.runCommand("create", {validator: {$jsonSchema: jsonSchema}}));
                 populate(collection);
             },
             ops: [{op: "update", query: query, update: update}]
@@ -67,7 +70,7 @@ function createDocValidationTest(name, generator, update, validator, jsonSchema)
  * $type and $exists on a single field. Also generates a comparison JSON Schema test.
  */
 var generator = function(i) {
-    return {_id: i, a: {"#RAND_INT": [0, 10000]}};
+    return {_id: i, a: 0};
 };
 var update = {$inc: {a: 1}};
 var validator = {$and: [{a: {$exists: true}}, {a: {$type: 1}}]};
@@ -220,37 +223,38 @@ generator = function(i) {
         t: {}
     };
 };
-update = {$inc: {a: 1}};
-validator = {
-    $jsonSchema: {
-        minProperties: 15,
-        maxProperties: 21,
-        properties: {
-            a: {type: "number"},
-            b: {bsonType: "number"},
-            c: {bsonType: "double"},
-            d: {type: ["number", "string"]},
-            e: {minimum: 0},
-            f: {type: "string"},
-            g: {bsonType: "string"},
-            h: {type: ["string", "array"]},
-            i: {minLength: 1},
-            j: {maxLength: 1},
-            k: {type: "array"},
-            l: {bsonType: "array"},
-            m: {bsonType: ["array", "object"]},
-            n: {minItems: 1},
-            o: {maxItems: 10},
-            p: {type: "object"},
-            q: {bsonType: "object"},
-            r: {type: ["object", "string"]},
-            s: {minProperties: 1},
-            t: {maxProperties: 15}
-        },
-        required: ["_id", "a", "b", "f", "g", "k", "l", "p", "q"]
-    }
+update = {
+    $inc: {a: 1}
 };
-createDocValidationTest("Update.DocValidation.JSONSchema.Variety", generator, update, validator);
+validator = undefined;
+jsonSchema = {
+    minProperties: 15,
+    maxProperties: 21,
+    properties: {
+        a: {type: "number"},
+        b: {bsonType: "number"},
+        c: {bsonType: "double"},
+        d: {type: ["number", "string"]},
+        e: {minimum: 0},
+        f: {type: "string"},
+        g: {bsonType: "string"},
+        h: {type: ["string", "array"]},
+        i: {minLength: 1},
+        j: {maxLength: 1},
+        k: {type: "array"},
+        l: {bsonType: "array"},
+        m: {bsonType: ["array", "object"]},
+        n: {minItems: 1},
+        o: {maxItems: 10},
+        p: {type: "object"},
+        q: {bsonType: "object"},
+        r: {type: ["object", "string"]},
+        s: {minProperties: 1},
+        t: {maxProperties: 15}
+    },
+    required: ["_id", "a", "b", "f", "g", "k", "l", "p", "q"]
+};
+createDocValidationTest("Update.DocValidation.Variety", generator, update, validator, jsonSchema);
 
 /**
  * Tests a JSON Schema that enforces constraints on an array containing thirty items.
@@ -294,48 +298,47 @@ generator = function(i) {
 update = {
     $inc: {"a.14": 1}
 };
-validator = {
-    $jsonSchema: {
-        properties: {
-            a: {
-                type: ["array"],
-                uniqueItems: true,
-                minItems: 10,
-                maxItems: 30,
-                items: [
-                    {enum: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit"]},
-                    {type: "string"},
-                    {type: ["string"]},
-                    {type: "string"},
-                    {minLength: 5},
-                    {maxLength: 90},
-                    {pattern: "[a-zA-Z .,]+"},
-                    {type: "object"},
-                    {minProperties: 1},
-                    {maxProperties: 3},
-                    {properties: {b: {type: "number"}}},
-                    {patternProperties: {c: {type: "number"}}},
-                    {required: ["b", "c"]},
-                    {properties: {b: {}, c: {}}, additionalProperties: false},
-                    {type: "number"},
-                    {type: ["number"]},
-                    {bsonType: "number"},
-                    {bsonType: ["int", "long", "number"]},
-                    {minimum: 0},
-                    {maximum: 10},
-                    {multipleOf: 2}
-                ],
-                additionalItems: {
-                    type: "array",
-                    oneOf: [
-                        {items: [{type: "number"}, {type: "string"}]},
-                        {items: [{type: "string"}, {type: "number"}]},
-                        {items: [{type: "string"}, {type: "string"}]}
-                    ]
-                }
+validator = undefined;
+jsonSchema = {
+    properties: {
+        a: {
+            type: ["array"],
+            uniqueItems: true,
+            minItems: 10,
+            maxItems: 30,
+            items: [
+                {enum: ["Lorem ipsum dolor sit amet, consectetur adipiscing elit"]},
+                {type: "string"},
+                {type: ["string"]},
+                {type: "string"},
+                {minLength: 5},
+                {maxLength: 90},
+                {pattern: "[a-zA-Z .,]+"},
+                {type: "object"},
+                {minProperties: 1},
+                {maxProperties: 3},
+                {properties: {b: {type: "number"}}},
+                {patternProperties: {c: {type: "number"}}},
+                {required: ["b", "c"]},
+                {properties: {b: {}, c: {}}, additionalProperties: false},
+                {type: "number"},
+                {type: ["number"]},
+                {bsonType: "number"},
+                {bsonType: ["int", "long", "number"]},
+                {minimum: 0},
+                {maximum: 10},
+                {multipleOf: 2}
+            ],
+            additionalItems: {
+                type: "array",
+                oneOf: [
+                    {items: [{type: "number"}, {type: "string"}]},
+                    {items: [{type: "string"}, {type: "number"}]},
+                    {items: [{type: "string"}, {type: "string"}]}
+                ]
             }
-        },
-        required: ["a"]
-    }
+        }
+    },
+    required: ["a"]
 };
-createDocValidationTest("Update.DocValidation.JSONSchema.Array", generator, update, validator);
+createDocValidationTest("Update.DocValidation.Array", generator, update, validator, jsonSchema);
