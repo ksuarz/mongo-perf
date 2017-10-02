@@ -58,7 +58,7 @@ function createDocValidationTest(name, doc, validator, jsonSchema) {
  */
 var doc = {a: {"#RAND_INT": [0, 10000]}};
 var validator = {$and: [{a: {$exists: true}}, {a: {$type: 16}}]};
-var jsonSchema = {properties: {a: {bsonType: "integer"}}, required: ["a"]};
+var jsonSchema = {properties: {a: {bsonType: "int"}}, required: ["a"]};
 createDocValidationTest("Insert.DocValidation.OneInt", doc, validator, jsonSchema);
 
 /**
