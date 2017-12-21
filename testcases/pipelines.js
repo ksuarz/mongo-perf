@@ -93,7 +93,6 @@ function populatorGenerator(isView, nDocs, indices, docGenerator) {
  * @param {Object} options - Options describing the test case.
  * @param {String} options.name - The name of the test case. "Aggregation." will be prepended.
  * @param {Object[]} options.pipeline - The aggregation pipeline to run.
- *
  * @param {Bool} [options.addSkipStage=true] - Indicates whether a final $skip stage, skipping 1
  * billion documents, should be added to the end of the pipeline. This is useful, and true by
  * default, because it avoids the overhead of BSON serialization, which helps to better qualify the
@@ -112,12 +111,15 @@ function populatorGenerator(isView, nDocs, indices, docGenerator) {
  * @param {function} [options.post=drop] - A function run after the test completes, intended to
  * clean up any state on the server it may have created during setup or execution. If 'pipeline'
  * uses more than one collection, this will need to drop the other collection(s) involved.
+ * @param {Object} [options.collation={locale: "simple"}] - The collation to use for the
+ * aggregation.
  */
 function generateTestCase(options) {
     var isView = true;  // Constant for use when calling populatorGenerator().
     var nDocs = options.nDocs || 500;
     var pipeline = options.pipeline;
     var tags = options.tags || [];
+    var collation = options.collation || {locale: "simple"};
 
     var addSkipStage = options.addSkipStage;
     if (addSkipStage === undefined) {
@@ -152,6 +154,7 @@ function generateTestCase(options) {
                 command: {
                     aggregate: "#B_COLL",
                     pipeline: pipeline,
+                    collation: collation,
                     cursor: {}
                 }
             }
@@ -1106,6 +1109,26 @@ generateTestCase({
     docGenerator: function simpleSortDocGenerator(i) {
         return {_id: i, x: Random.rand()};
     },
+    pipeline: [{$sort: {x: 1}}]
+});
+
+generateTestCase({
+    name: "SortScalarsWithCollation",
+    tags: ["collation"],
+    docGenerator: function simpleSortDocGenerator(i) {
+        return {_id: i, x: Random.rand() < 0.5 ? "gène" : "gêné"};
+    },
+    collation: {locale: "fr"},
+    pipeline: [{$sort: {x: 1}}]
+});
+
+generateTestCase({
+    name: "SortArraysWithCollation",
+    tags: ["collation"],
+    docGenerator: function simpleSortDocGenerator(i) {
+        return {_id: i, x: Random.rand() < 0.5 ? ["gène", "arrière"] : ["gêné", "arriéré"]};
+    },
+    collation: {locale: "fr"},
     pipeline: [{$sort: {x: 1}}]
 });
 
