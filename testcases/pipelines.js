@@ -230,13 +230,17 @@ generateTestCase({
                     boolFilter: true
                 }
             }
-        }
+        },
+        // For $geoNear, we limit the number of results to 100 documents, to match the default
+        // behavior the $geoNear stage prior to 4.2.
+        {$limit: 100},
     ]
 });
 
 generateTestCase({
     name: "GeoNear2dSphere",
     indices: [{geo: "2dsphere"}],
+    tags: ["kyle"],
     docGenerator: function geoNear2dGenerator(i) {
         return {
             _id: i,
@@ -259,7 +263,10 @@ generateTestCase({
                 },
                 spherical: true
             }
-        }
+        },
+        // For $geoNear, we limit the number of results to 100 documents, to match the default
+        // behavior the $geoNear stage prior to 4.2.
+        {$limit: 100},
     ]
 });
 
